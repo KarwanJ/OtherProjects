@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/spectral_background2"
+    tools:context=".MapActivity">
+
+    <!-- MapView widget from osmdroid library, used to display the map -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/bottom_info_panel"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Center Location Button -->
+    <Button
+        android:id="@+id/btn_center_location"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="12dp"
+        android:background="@drawable/ic_my_location"
+        app:layout_constraintEnd_toEndOf="@id/mapview"
+        app:layout_constraintTop_toTopOf="@id/mapview" />
+
+    <!-- Stylish Progress with Status -->
+    <LinearLayout
+
+        android:id="@+id/loading_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/rounded_bg_translucent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- This ProgressBar shows a loading spinner indicating that the app is waiting for the user's location to be determined. -->
+        <ProgressBar
+            android:id="@+id/location_loader"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:indeterminate="true" />
+        <!-- This TextView displays a message indicating that the app is currently retrieving the user's location. -->
+        <TextView
+            android:id="@+id/location_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="📍 Getting location..."
+            android:textColor="#FF5252"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Material TabLayout -->
+    <!-- This TabLayout provides a set of tabs for navigation between different sections of the app. The selected tab is highlighted with a specific color and indicator. -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tab_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:tabIndicatorColor="@color/purple_500"
+        app:tabIndicatorHeight="5dp"
+        app:tabSelectedTextColor="@color/purple_700"
+        app:tabTextColor="@android:color/darker_gray" />
+
+
+    <!-- This FrameLayout is used to display additional information at the bottom of the screen. It is initially hidden and becomes visible when a tab is selected. -->
+    <FrameLayout
+        android:id="@+id/bottom_info_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="2dp"
+        android:background="@drawable/rounded_top_panel"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/tab_layout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!--        location layout-->
+        <!-- This LinearLayout contains the UI elements for displaying the user's location details. It is initially hidden and becomes visible when the "Location" tab is selected. -->
+        <LinearLayout
+            android:id="@+id/layout_location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+            <!-- This TextView displays the latitude value. It is part of the user's location information. -->
+            <TextView
+                android:id="@+id/textView_lat"
+                style="@style/InfoText"
+                android:hint="lat" />
+            <!-- This TextView displays the longitude value, showing the user's position on the map. -->
+            <TextView
+                android:id="@+id/textView_long"
+                style="@style/InfoText"
+                android:hint="long" />
+            <!-- This TextView shows the live latitude value that updates in real time as the user's location changes. -->
+            <TextView
+                android:id="@+id/textView_live_lat"
+                style="@style/InfoText"
+                android:hint="Live Lat" />
+            <!-- This TextView shows the live longitude value, updating dynamically with the user's current location. -->
+            <TextView
+                android:id="@+id/textView_live_long"
+                style="@style/InfoText"
+                android:hint="Live Lon" />
+
+
+            <!-- This MaterialButton allows the user to manually update their latitude and longitude by pressing it. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_update"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="@color/colorPrimary"
+                android:backgroundTintMode="add"
+                android:padding="8dp"
+                android:text="update"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <!-- This LinearLayout contains UI elements related to speed and path recording, and is initially hidden. -->
+        <!-- Speed Layout -->
+        <LinearLayout
+            android:id="@+id/layout_speed_record"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+            <!-- This TextView displays the current speed in meters per second (m/s). It is updated in real-time. -->
+            <TextView
+                android:id="@+id/textView_speed"
+                style="@style/InfoText"
+                android:hint="Speed: 0.00 m/s" />
+            <!-- This SwitchCompat allows the user to toggle path recording on or off. When enabled, the user's path will be recorded. -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_record"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Record Path" />
+            <!-- This SwitchCompat enables or disables speed smoothing, which helps filter out abrupt speed changes. -->
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_smooth_speed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Smooth Speed" />
+        </LinearLayout>
+
+        <!--accuracy layout-->
+        <!-- This LinearLayout contains UI elements related to location accuracy and is initially hidden. -->
+        <LinearLayout
+            android:id="@+id/layout_accuracy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+            <!-- This TextView displays the current accuracy of the location in meters. It updates as the user moves. -->
+            <TextView
+                android:id="@+id/textView_accuracy"
+                style="@style/InfoText"
+                android:text="Accuracy: 0.00 m" />
+            <!-- This TextView shows the new accuracy value calculated using DOP (Dilution of Precision). -->
+            <TextView
+                android:id="@+id/textView_new_accuracy"
+                style="@style/InfoText"
+                android:text="New Accuracy(dop): 0.00 m" />
+            <!-- This TextView displays the DOP values, which indicate the quality of the GPS signal used to calculate accuracy. -->
+            <TextView
+                android:id="@+id/textView_dop_values"
+                style="@style/InfoText"
+                android:text="DOP: --" />
+
+
+            <RadioGroup
+                android:id="@+id/radio_group_accuracy_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <RadioButton
+                    android:id="@+id/radio_indoor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Indoor" />
+
+                <RadioButton
+                    android:id="@+id/radio_outdoor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Outdoor" />
+
+                <RadioButton
+                    android:id="@+id/radio_off"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Off"
+                    android:checked="true" /> <!-- پیش‌فرض روی off -->
+            </RadioGroup>
+
+        </LinearLayout>
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

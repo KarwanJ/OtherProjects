@@ -1,0 +1,1 @@
+Hello. Open A_Star Folder Run main.py

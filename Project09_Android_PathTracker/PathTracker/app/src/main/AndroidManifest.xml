@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.pathtracker">
+
+
+    <!-- Permission to access precise location from GPS -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Permission to access approximate location using network or Wi-Fi -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Permission to check the state of the device's Wi-Fi connection -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- Permission to access the internet for functionalities like loading map tiles -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Permission to access network state (checking if the device is connected to a network) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"
+        tools:node="merge" />
+    <!-- Application settings and configurations, including backup options, theme, icons, and declared activities -->
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_custom_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_custom_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.PathTracker"
+        tools:targetApi="31">
+        <activity
+            android:name=".MapActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

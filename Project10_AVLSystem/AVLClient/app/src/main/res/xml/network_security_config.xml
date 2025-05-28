@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Network security configuration file to define network security settings for the app -->
+<network-security-config>
+    <!-- Configuration for specific domains, allowing custom network security policies -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Specifies the domain (IP address) to which this configuration applies, including subdomains -->
+        <domain includeSubdomains="true">172.30.23.240</domain>
+    </domain-config>
+</network-security-config>

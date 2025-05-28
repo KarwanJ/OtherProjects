@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- Written by 3D City Database Importer/Exporter, version "3.3-build1" -->
+<!-- Chair of Geoinformatics, Technical University of Munich, Germany, https://www.gis.bgu.tum.de/ -->
+<kml xmlns:xal="urn:oasis:names:tc:ciq:xsdschema:xAL:2.0" xmlns="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gx="http://www.google.com/kml/ext/2.2">
+  <Document>
+    <name>Farshad_collada</name>
+    <open>false</open>
+    <Placemark id="COLLADA_BLDG_0003000b0009a940">
+      <name>BLDG_0003000b0009a940</name>
+      <Model>
+        <altitudeMode>absolute</altitudeMode>
+        <Location>
+          <longitude>13.3838837</longitude>
+          <latitude>52.5378462</latitude>
+          <altitude>0.0</altitude>
+        </Location>
+        <Orientation>
+          <heading>358.7273111</heading>
+        </Orientation>
+        <Link>
+          <href>4732/BLDG_0003000b0009a940.dae</href>
+        </Link>
+      </Model>
+    </Placemark>
+    <Placemark id="COLLADA_BLDG_00030000001ebd92">
+      <name>BLDG_00030000001ebd92</name>
+      <Model>
+        <altitudeMode>absolute</altitudeMode>
+        <Location>
+          <longitude>13.389213</longitude>
+          <latitude>52.5437973</latitude>
+          <altitude>0.0</altitude>
+        </Location>
+        <Orientation>
+          <heading>358.7259508</heading>
+        </Orientation>
+        <Link>
+          <href>2847/BLDG_00030000001ebd92.dae</href>
+        </Link>
+      </Model>
+    </Placemark>
+  </Document>
+</kml>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00000000</color>
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="colorPrimary">#800000</color>
+    <color name="colorPrimary2">#800000</color>
+    <color name="colorPrimaryDark">#4B0000</color>
+    <color name="colorAccent">#FFB300</color>
+    <color name="colorTextPrimary">#FFFFFF</color>
+    <color name="colorBackground">#121212</color>
+    <color name="colorPanel">#F8F8F8</color>
+    <color name="colorDanger">#FF5252</color>
+
+
+</resources>

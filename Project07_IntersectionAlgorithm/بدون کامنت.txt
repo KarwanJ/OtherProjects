@@ -1,0 +1,291 @@
+#---------------------Karwan Jalali & Farshad Shamsikhani-----------------------
+
+
+import matplotlib
+matplotlib.use('TkAgg')
+import geopandas as gpd
+from shapely.geometry import LineString, Point
+import matplotlib.pyplot as plt
+import os
+
+# ===========================
+# Segment class to represent a line segment
+# ===========================
+class Segment:
+    def __init__(self, p1, p2, id=None):
+        # Determine which point is the upper (higher y, or left-most if equal y)
+        if p1[1] > p2[1] or (p1[1] == p2[1] and p1[0] < p2[0]):
+            self.upper = p1
+            self.lower = p2
+        else:
+            self.upper = p2
+            self.lower = p1
+        self.id = id
+        self.is_horizontal = abs(p1[1] - p2[1]) < 1e-5  # Check for nearly horizontal segments
+
+    def get_x_at_y(self, y):
+        # Returns x-coordinate of the segment at a specific y (used in status ordering)
+        x1, y1 = self.upper
+        x2, y2 = self.lower
+        if self.is_horizontal:
+            return (x1 + x2) / 2  # Return midpoint x if segment is horizontal
+        if abs(y2 - y1) < 1e-6:
+            return x1
+        return x1 + (x2 - x1) * (y - y1) / (y2 - y1)
+
+# ===========================
+# Read segments from shapefile into a list of Segment objects
+# ===========================
+def read_segments_from_shapefile(shapefile_path):
+    gdf = gpd.read_file(shapefile_path)
+    segments = []
+    print("Geometry types in shapefile:", gdf.geometry.type.unique())
+    print("Total features:", len(gdf))
+    for index, row in gdf.iterrows():
+        line = row.geometry
+        if isinstance(line, LineString):
+            coords = list(line.coords)
+            for j in range(len(coords) - 1):
+                p1 = coords[j]
+                p2 = coords[j + 1]
+                segment = Segment(p1, p2, id=f"{index}_{j}")
+                segments.append(segment)
+        else:
+            print(f"Skipping unsupported geometry at index {index}: {type(line)}")
+    print("Total segments created:", len(segments))
+    return segments, gdf
+
+# ===========================
+# Event class for sweep line events (segment endpoints and intersections)
+# ===========================
+class Event:
+    def __init__(self, point, event_type, segments):
+        self.point = point  # (x, y) tuple
+        self.type = event_type  # 'start', 'end', or 'intersection'
+        self.segments = segments  # list of involved segments
+
+    def __lt__(self, other):
+        # Events are ordered top-to-bottom, then left-to-right
+        if abs(self.point[1] - other.point[1]) > 1e-6:
+            return self.point[1] > other.point[1]
+        return self.point[0] < other.point[0]
+
+    def __repr__(self):
+        return f"{self.type} @ {self.point}"
+
+# ===========================
+# Event queue to manage all upcoming sweep line events
+# ===========================
+class EventQueue:
+    def __init__(self):
+        self.events = []
+        self.seen_points = set()
+
+    def add(self, event):
+        # Avoid adding duplicate events
+        point_tuple = (round(event.point[0], 8), round(event.point[1], 8))
+        if point_tuple not in self.seen_points:
+            self.events.append(event)
+            self.events.sort()  # Keep events ordered
+            self.seen_points.add(point_tuple)
+
+    def pop(self):
+        return self.events.pop(0)
+
+    def is_empty(self):
+        return len(self.events) == 0
+
+# ===========================
+# Geometry helpers
+# ===========================
+def ccw(A, B, C):
+    return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
+
+def do_intersect(s1, s2):
+    A, B = s1.upper, s1.lower
+    C, D = s2.upper, s2.lower
+    return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
+
+# ===========================
+# Sweep line status structure to track active segments
+# ===========================
+class StatusStructure:
+    def __init__(self):
+        self.active_segments = []
+
+    def insert(self, segment, y):
+        # Insert segment into correct horizontal order based on x at sweep line y
+        if segment.is_horizontal:
+            self.active_segments.append(segment)
+        else:
+            x = segment.get_x_at_y(y - 1e-6)
+            i = 0
+            while i < len(self.active_segments) and (
+                self.active_segments[i].is_horizontal or
+                self.active_segments[i].get_x_at_y(y - 1e-6) < x
+            ):
+                i += 1
+            self.active_segments.insert(i, segment)
+
+    def delete(self, segment):
+        # Remove a segment if present
+        if segment in self.active_segments:
+            self.active_segments.remove(segment)
+
+    def segments_containing_point(self, p):
+        # Return segments that contain the point p
+        result = []
+        for seg in self.active_segments:
+            if seg.upper != p and seg.lower != p:
+                y_min = min(seg.upper[1], seg.lower[1])
+                y_max = max(seg.upper[1], seg.lower[1])
+                if y_min - 1e-6 <= p[1] <= y_max + 1e-6:
+                    x = seg.get_x_at_y(p[1])
+                    if seg.is_horizontal:
+                        x_min = min(seg.upper[0], seg.lower[0])
+                        x_max = max(seg.upper[0], seg.lower[0])
+                        if x_min - 1e-6 <= p[0] <= x_max + 1e-6:
+                            result.append(seg)
+                    elif abs(x - p[0]) < 1e-6:
+                        result.append(seg)
+        return result
+
+# ===========================
+# Handle an event point
+# ===========================
+def handle_event_point(p, T, Q, point_segment_map, output, seen_points):
+    U = point_segment_map.get(('U', p), [])  # Segments starting at p
+    L = point_segment_map.get(('L', p), [])  # Segments ending at p
+    C = T.segments_containing_point(p)       # Segments passing through p
+    involved = list(set(U + L + C))
+    point_tuple = (round(p[0], 8), round(p[1], 8))
+
+    # Report intersection if more than one segment is involved
+    if len(involved) > 1 and point_tuple not in seen_points:
+        intersection_type = classify_intersection(p, involved)
+        print(f"Intersection at {p} with segments: {[s.id for s in involved]} → type: {intersection_type}")
+        output.append((p, involved))
+        seen_points.add(point_tuple)
+
+    # Update the status structure
+    for s in L + C:
+        T.delete(s)
+    for s in U + C:
+        T.insert(s, p[1])
+
+    # Check new intersections
+    for i in range(len(T.active_segments) - 1):
+        s1 = T.active_segments[i]
+        s2 = T.active_segments[i + 1]
+        find_new_event(s1, s2, p, Q, seen_points)
+
+# ===========================
+# Check and enqueue new intersection event
+# ===========================
+def find_new_event(s1, s2, p, Q, seen_points):
+    if s1 is None or s2 is None or s1 == s2:
+        return
+    if do_intersect(s1, s2):
+        ipt = compute_intersection_point(s1, s2)
+        if ipt and (ipt[1] < p[1] - 1e-6 or (abs(ipt[1] - p[1]) < 1e-6 and ipt[0] > p[0] + 1e-6)):
+            Q.add(Event(ipt, 'intersection', [s1, s2]))
+
+# ===========================
+# Compute intersection point of two segments
+# ===========================
+def compute_intersection_point(s1, s2):
+    x1, y1 = s1.upper
+    x2, y2 = s1.lower
+    x3, y3 = s2.upper
+    x4, y4 = s2.lower
+    denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+    if abs(denom) < 1e-6:
+        return None
+    px = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denom
+    py = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denom
+    def between(a, b, c): return min(a, b) - 1e-6 <= c <= max(a, b) + 1e-6
+    if between(x1, x2, px) and between(y1, y2, py) and between(x3, x4, px) and between(y3, y4, py):
+        return (px, py)
+    return None
+
+# ===========================
+# Main intersection algorithm using sweep line
+# ===========================
+def FINDINTERSECTIONS(segments):
+    Q = EventQueue()
+    T = StatusStructure()
+    output = []
+    seen_points = set()
+    point_segment_map = {}
+    for s in segments:
+        point_segment_map.setdefault(('U', s.upper), []).append(s)
+        Q.add(Event(s.upper, 'start', [s]))
+        point_segment_map.setdefault(('L', s.lower), []).append(s)
+        Q.add(Event(s.lower, 'end', [s]))
+    while not Q.is_empty():
+        event = Q.pop()
+        handle_event_point(event.point, T, Q, point_segment_map, output, seen_points)
+    return output
+
+# ===========================
+# Classify intersection type: endpoint or interior
+# ===========================
+def classify_intersection(point, segments):
+    for s in segments:
+        if (abs(point[0] - s.upper[0]) < 1e-6 and abs(point[1] - s.upper[1]) < 1e-6) or \
+           (abs(point[0] - s.lower[0]) < 1e-6 and abs(point[1] - s.lower[1]) < 1e-6):
+            return "endpoint"
+    return "interior"
+
+# ===========================
+# Save intersection results to shapefile
+# ===========================
+def save_intersections_to_shapefile(intersections, output_path, crs):
+    data = {'geometry': [], 'type': [], 'seg_ids': []}
+    for point, segs in intersections:
+        kind = classify_intersection(point, segs)
+        seg_ids = [s.id for s in segs]
+        data['geometry'].append(Point(point))
+        data['type'].append(kind)
+        data['seg_ids'].append(','.join(map(str, seg_ids)))
+    gdf = gpd.GeoDataFrame(data, crs=crs)
+    gdf.to_file(output_path)
+    print(f"Intersections saved to {output_path}")
+
+# ===========================
+# Plot segments and intersection points
+# ===========================
+def plot_segments_and_intersections(gdf_segments, intersections):
+    fig, ax = plt.subplots(figsize=(8, 6))
+    gdf_segments.plot(ax=ax, color='#FFCC99', linewidth=0.7, label='Segments')
+    points = []
+    colors = []
+    for point, segs in intersections:
+        kind = classify_intersection(point, segs)
+        points.append(Point(point))
+        colors.append('red' if kind == 'interior' else 'blue')
+    if points:
+        gdf_points = gpd.GeoDataFrame(geometry=points, crs=gdf_segments.crs)
+        gdf_points.plot(ax=ax, color=colors, markersize=40, label='Intersections')
+    plt.title("Line Segments and Intersections")
+    plt.legend()
+    plt.axis('off')
+    plt.tight_layout()
+    plt.savefig("Exports/intersections_map.png", dpi=300)
+    plt.show()
+
+# ===========================
+# Main program execution
+# ===========================
+shapefile_path = "layers/FINAL.shp"
+segments, gdf_segments = read_segments_from_shapefile(shapefile_path)
+intersections = FINDINTERSECTIONS(segments)
+if not os.path.exists('Exports'):
+    os.makedirs('Exports')
+output_shapefile_path = "Exports/intersections.shp"
+save_intersections_to_shapefile(intersections, output_shapefile_path, gdf_segments.crs)
+for point, segs in intersections:
+    seg_ids = [f"S{s.id}" for s in segs]
+    kind = classify_intersection(point, segs)
+    print(f"Intersection at {point} between {seg_ids} → type: {kind}")
+plot_segments_and_intersections(gdf_segments, intersections)

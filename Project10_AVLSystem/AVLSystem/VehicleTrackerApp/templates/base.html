@@ -1,0 +1,43 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVL System</title>
+
+    <!-- Include Leaflet CSS (for map rendering) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+
+    <!-- Include Leaflet JS (for map functionality) -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- Include Leaflet Draw plugin (for drawing on the map) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+    <!-- Include Leaflet Point-in-Polygon plugin -->
+    <script src="https://unpkg.com/leaflet-pip@1.1.0/leaflet-pip.js"></script>
+
+    <!-- Include FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Load local static CSS file -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+<!-- Header of the website -->
+<header class="site-header">
+    <div class="header-content">
+        <i class="fas fa-map-marked-alt"></i>
+        <h1>سامانه رهگیری لحظه‌ای وسایل نقلیه</h1> <!-- Persian title shown to users -->
+    </div>
+</header>
+
+<!-- Content block to be filled by child templates -->
+{% block content %}{% endblock %}
+
+</body>
+</html>

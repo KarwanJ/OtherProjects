@@ -1,0 +1,119 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+
+
+/* Global layout */
+#layout {
+    display: flex;
+    height: 100vh; /* تضمین می‌کنه ارتفاع کل صفحه فقط در ارتفاع مرورگر باشه */
+    overflow: hidden;
+}
+
+/* Sidebar Styles */
+#sidebar {
+    width: 320px;
+    background: rgba(255, 255, 255, 0.95); /* modern semi-transparent */
+    backdrop-filter: blur(8px);
+    color: #3b0a22;
+    padding: 18px 16px;
+    overflow-y: auto;
+    height: 570px;
+    border-radius: 0 16px 16px 0;
+    box-shadow: 4px 0 12px rgba(59, 10, 34, 0.1);
+    font-family: 'Segoe UI', sans-serif;
+    scroll-behavior: smooth;
+    scrollbar-width: thin; /* برای فایرفاکس */
+}
+
+#sidebar h3 {
+    border-bottom: 2px solid #b3124b;
+    color: #730c30;
+    font-size: 16px;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+}
+
+.phone-card {
+    background: #fff;
+    border: 1px dashed #730c30;
+    padding: 12px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(179, 18, 75, 0.1);
+}
+
+.alarm {
+    margin-top: 6px;
+    color: red;
+    font-weight: bold;
+}
+
+button {
+    padding: 8px 14px;
+    margin-top: 8px;
+    background: linear-gradient(135deg, #b3124b, #730c30);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background: linear-gradient(135deg, #8e0e3f, #5a0825);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(115, 12, 48, 0.3);
+}
+
+/* Map section */
+#map {
+    flex-grow: 1;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+#zoom-all {
+    position: absolute;
+    bottom: 100px;
+    right: 10px;
+    z-index: 1000;
+}
+
+
+.site-header {
+    width: 100%;
+    background: linear-gradient(to right, #b3124b, #730c30); /* رنگ قرمز گرادینتی */
+    color: white;
+    padding: 18px 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1500;
+    text-align: center;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.header-content i {
+    font-size: 28px;
+    margin-top: 3px;
+}
+
+.header-content h1 {
+    font-size: 22px;
+    margin: 0;
+    font-weight: 600;
+    font-family: 'Segoe UI', sans-serif;
+}
+

@@ -1,0 +1,52 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <!-- Title TextView centered at the top -->
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:padding="8dp"
+        android:text="RSSI Viewer (Jalali)"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <!-- ListView to display BTS information -->
+    <ListView
+        android:id="@+id/btsListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/refreshButton"
+        android:layout_below="@id/titleText"
+        android:layout_marginTop="8dp"
+        android:dividerHeight="1dp" />
+
+    <!-- Refresh Button aligned at the bottom center -->
+    <Button
+        android:id="@+id/refreshButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="@color/colorPrimary"
+        android:backgroundTintMode="add"
+        android:padding="8dp"
+        android:text="Refresh" />
+
+    <!-- Circular ProgressBar shown during loading (hidden by default) -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:visibility="gone" />
+
+
+</RelativeLayout>

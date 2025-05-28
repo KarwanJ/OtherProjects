@@ -1,0 +1,929 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    {% load static %}
+
+    <div id="layout">
+        <div id="sidebar">
+            <!-- Basemap Selector -->
+            <div id="basemap-selector">
+                <h3>🗺 انتخاب نقشه پایه</h3>
+                <label><input type="radio" name="basemap" value="osm" checked> OpenStreetMap</label><br>
+                <label><input type="radio" name="basemap" value="satellite"> Satellite</label><br>
+                <label><input type="radio" name="basemap" value="topo"> Topographic</label>
+            </div>
+
+
+            <!-- Device list panel -->
+            <div id="phone-list">
+                <h3>📱 دستگاه‌ها</h3>
+                <div id="phone-cards">
+                    {% if phones %}
+                        {% for phone in phones %}
+                            <!-- Card for each phone, initially hidden -->
+                            <div class="phone-card" id="card_{{ phone.phone_id }}" style="display: none;">
+                                <h4>{{ phone.phone_id }}</h4>
+                                <p><strong>Model:</strong> {{ phone.model }}</p>
+                                <p><strong>Battery:</strong> {{ phone.battery_level }}%</p>
+                                <p><strong>Last update:</strong> {{ phone.timestamp|date:"H:i:s" }}</p>
+                                <p>
+                                    <strong>Location:</strong> {{ phone.lat|floatformat:2 }}, {{ phone.lon|floatformat:2 }}
+                                </p>
+                                <!-- Zoom button for map -->
+                                <button onclick="zoomTo('{{ phone.phone_id }}')">🔍 زوم</button>
+
+                                <!-- Toggle to start/stop track recording -->
+                                <label>
+                                    <input type="range" min="0" max="1" value="0" id="switch_{{ phone.phone_id }}"
+                                           onchange="toggleTracking('{{ phone.phone_id|escapejs }}')"
+                                           style="width: 50px; vertical-align: middle;">
+                                    ضبط مسیر
+                                </label>
+
+                                <!-- Placeholder for alarm messages (e.g. speed alerts) -->
+                                <div class="alarm" id="alarm_{{ phone.phone_id }}"></div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Polygon tool controls for defining allowed area -->
+            <div id="polygon-tools">
+                <h3>📐 ناحیه مجاز</h3>
+                <button onclick="enableDraw()">ترسیم پلیگون</button>
+                <button onclick="removePolygon()">حذف پلیگون</button>
+            </div>
+
+            <!-- Speed control section -->
+            <div id="speed-control">
+                <h3>🚦 سرعت مجاز</h3>
+                <input type="number" id="speedLimit" placeholder="مثلاً 60"/>
+                <button onclick="applySpeedLimit()">اعمال</button>
+                <p id="speedLimitMessage" style="display: none; color: green;">✅ اعمال شد</p>
+            </div>
+
+            <!-- Toggle for showing/hiding saved tracks -->
+            <div id="track-toggle">
+                <h3>📂 نمایش مسیرهای ذخیره‌شده</h3>
+                <label>
+                    <input type="checkbox" id="toggleTracks" checked onchange="togglePersistentTracks()">
+                    نمایش مسیرها
+                </label>
+            </div>
+
+        </div>
+
+        <!-- Map container -->
+        <div id="map">
+            <!-- Button to zoom out and fit all markers on the map -->
+            <button id="zoom-all">🌐 زوم به همه</button>
+        </div>
+
+    </div>
+
+    <!-- Load Leaflet Draw JavaScript library for drawing shapes on the map -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+    <!-- Load Leaflet Draw CSS for styling drawing tools -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+
+    <script>
+        // Initialize the Leaflet map centered on Tehran with zoom level 10
+        var map = L.map('map').setView([35.6895, 51.3890], 10);
+        const speedCones = {};
+        const zoneCones = {};
+        // Object to hold Leaflet marker instances keyed by phone ID
+        var markers = {};
+
+        // Object to hold paths (polylines) being actively recorded per phone
+        var paths = {};
+
+        // Object to hold temporary polylines (during live tracking)
+        var polylines = {};
+
+        // Object to hold persistent (saved) polylines per phone
+        var persistentPolylines = {};
+
+        // Store previous positions for distance-based filtering
+        var previousPositions = {};
+
+        // Currently drawn polygon (allowed area)
+        var currentPolygon = null;
+
+        // Circles to represent phone positions
+        var circles = {};
+
+        // Circles to indicate speed violations
+        var speedCircles = {};
+
+        // Currently focused phone ID (used for zoom and highlight)
+        var focusedPhoneId = null;
+
+        // Speed limit value (set by user)
+        var speedLimit = 0;
+
+        // Status of whether each phone is currently being tracked
+        var isTracking = {};
+
+        // Session IDs associated with each phone's tracking session
+        var currentSessionId = {};
+
+        // Add basemaps as map background
+        const baseLayers = {
+            osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri & contributors'
+            }),
+            topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenTopoMap contributors'
+            })
+        };
+
+        // مقدار پیش‌فرض
+        baseLayers.osm.addTo(map);
+
+        // Generate a random hex color (used for differentiating track lines by phone)
+        function getRandomColor() {
+            return "#" + Math.floor(Math.random() * 16777215).toString(16);
+        }
+
+        // Object to store unique colors assigned to each phone's persistent track
+        var persistentTrackColors = {};
+
+        // Function to fetch and display saved track data for a specific phone
+        function loadPersistentTracks(phoneId) {
+            fetch(`/api/tracks/${phoneId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.tracks && data.tracks.length > 0) {
+                        // گروه‌بندی مسیرها بر اساس session_id
+                        const tracksBySession = {};
+                        data.tracks.forEach(track => {
+                            if (track.session_id) {
+                                if (!tracksBySession[track.session_id]) {
+                                    tracksBySession[track.session_id] = [];
+                                }
+                                tracksBySession[track.session_id].push([track.lat, track.lon]);
+                            }
+                        });
+
+                        // حذف پلی‌لاین‌های قبلی برای این گوشی
+                        if (persistentPolylines[phoneId]) {
+                            for (let sessionId in persistentPolylines[phoneId]) {
+                                map.removeLayer(persistentPolylines[phoneId][sessionId]);
+                            }
+                        } else {
+                            persistentPolylines[phoneId] = {};
+                        }
+
+                        // ایجاد پلی‌لاین برای هر session_id
+                        for (let sessionId in tracksBySession) {
+                            const coords = tracksBySession[sessionId];
+                            if (coords.length >= 2) {
+                                const color = getRandomColor();
+                                persistentPolylines[phoneId][sessionId] = L.polyline(coords, {
+                                    color: color,
+                                    weight: 2
+                                }).addTo(map);
+                            }
+                        }
+
+                        // اگر نمایش مسیرها غیرفعال باشه، پلی‌لاین‌ها رو مخفی کن
+                        if (!document.getElementById("toggleTracks").checked) {
+                            for (let sessionId in persistentPolylines[phoneId]) {
+                                map.removeLayer(persistentPolylines[phoneId][sessionId]);
+                            }
+                        }
+                    }
+                })
+                .catch(error => console.error('Error loading tracks:', error));
+        }
+
+        {% for phone in phones %}
+            // Define the initial lat/lon position for this phone
+            var latlng = [{{ phone.lat }}, {{ phone.lon }}];
+
+            // Create a marker and add it to the map with a popup
+            markers["{{ phone.phone_id|escapejs }}"] = L.marker(latlng).addTo(map)
+                .bindPopup(`
+            <b>📱 {{ phone.phone_id|escapejs }}</b><br>
+            <strong>مدل:</strong> {{ phone.model|escapejs|default:'N/A' }}<br>
+            <strong>سرعت:</strong> 🚗 N/A km/h<br>
+            <strong>شارژ باتری:</strong> ⚡ {{ phone.battery_level|default:'N/A' }}%
+        `);
+
+            // Store the phone's initial known position and timestamp
+            previousPositions["{{ phone.phone_id|escapejs }}"] = {
+                lat: {{ phone.lat }},
+                lon: {{ phone.lon }},
+                timestamp: Date.now()
+            };
+
+            // Load and display this phone’s persistent track (saved path)
+            loadPersistentTracks("{{ phone.phone_id|escapejs }}");
+        {% endfor %}
+
+        // Function to apply the user-defined speed limit
+        function applySpeedLimit() {
+            const input = document.getElementById('speedLimit');
+
+            // Parse speed limit from input; fallback to 0 if invalid
+            speedLimit = parseFloat(input.value) || 0;
+
+            // Show confirmation message
+            const message = document.getElementById('speedLimitMessage');
+            message.style.display = 'block';
+
+            // Automatically hide the message after 2 seconds
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 2000);
+        }
+
+        /**
+         * Updates the phone list UI and map markers based on the latest server data.
+         *
+         * - Displays new or updated phone cards for active devices.
+         * - Hides cards and cleans up map layers (markers, polylines, circles) for inactive devices.
+         * - Automatically stops tracking and saves tracks to the server when a device becomes inactive.
+         * - Maintains state of currently active devices and updates the DOM and map accordingly.
+         *
+         * This function is designed to run periodically to reflect real-time changes in device activity.
+         */
+// Function to update the list of phone cards in the UI based on the server data
+
+        function updatePhoneList(data) {
+            const phoneCards = document.getElementById('phone-cards');// Get the container for phone cards
+            const cards = phoneCards.getElementsByClassName('phone-card'); // Get all phone card elements
+            const activePhones = new Set();// Set to track active phones
+            // If there is phone data and it's not empty, proceed with the updates
+
+            if (data.phones && data.phones.length > 0) {
+                // Loop through all phones in the data
+
+                for (let phone of data.phones) {
+                    let phoneId = phone.phone_id;
+                    let card = document.getElementById(`card_${phoneId}`);
+                    // If the phone is active, display or create a new card for it
+
+                    if (phone.is_active) {
+                        activePhones.add(phoneId);
+                        // If the card already exists, just show it
+
+                        if (card) {
+                            card.style.display = 'block';
+                        } else {
+                            // Otherwise, create a new card for this phone
+
+                            let newCard = document.createElement('div');
+                            newCard.className = 'phone-card';
+                            newCard.id = `card_${phoneId}`;
+                            newCard.innerHTML = `
+                        <h4>${phoneId}</h4>
+                        <p><strong>Model:</strong> ${phone.model || 'N/A'}</p>
+                        <p><strong>Battery:</strong> ${phone.battery_level || 'N/A'}%</p>
+                        <p><strong>Location:</strong> ${phone.lat.toFixed(2)}, ${phone.lon.toFixed(2)}</p>
+                        <p><strong>Last update:</strong> ${new Date(phone.timestamp).toLocaleTimeString()}</p>
+                        <button onclick="zoomTo('${phoneId}')">🔍 زوم</button>
+                        <label>
+                            <input type="range" min="0" max="1" value="0" id="switch_${phoneId}"
+                                   onchange="toggleTracking('${phoneId}')"
+                                   style="width: 50px; vertical-align: middle;">
+                            ضبط مسیر
+                        </label>
+                        <div class="alarm" id="alarm_${phoneId}"></div>
+                    `;
+                            phoneCards.appendChild(newCard);// Add the new card to the phone cards container
+                        }
+                    } else if (card) {
+                        // If the phone is inactive, hide the card and remove related map elements
+                        card.style.display = 'none';
+                        // If the phone was being tracked, stop tracking, save the track, and remove the associated data
+
+                        if (isTracking[phoneId]) {
+                            isTracking[phoneId] = false;
+                            if (polylines[phoneId]) {
+                                map.removeLayer(polylines[phoneId]);
+                                delete polylines[phoneId];
+                            }
+                            delete paths[phoneId];
+                            // If there was a session ID for the phone, save the track data
+
+                            const sessionId = currentSessionId[phoneId];
+                            if (sessionId) {
+                                fetch('/api/save_track_shapefile/', {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({phone_id: phoneId, session_id: sessionId})
+                                })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.status === 'success') {
+                                            alert(`✅ مسیر ضبط‌شده دستگاه ${phoneId} با موفقیت ذخیره شد.`);
+                                            for (let ext of ['shp', 'shx', 'dbf', 'prj']) {
+                                                const url = `/download/${data.files[ext].split('/').pop()}`;
+                                                const link = document.createElement('a');
+                                                link.href = url;
+                                                link.download = '';
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                            }
+                                            loadPersistentTracks(phoneId);
+                                        }
+                                    });
+                            }
+                            delete currentSessionId[phoneId];
+                        }
+                        // Remove markers and other layers related to the phone from the map
+
+                        if (markers[phoneId]) {
+                            map.removeLayer(markers[phoneId]);
+                            delete markers[phoneId];
+                            delete previousPositions[phoneId];
+                        }
+                        if (circles[phoneId]) {
+                            map.removeLayer(circles[phoneId]);
+                            delete circles[phoneId];
+                        }
+                        if (speedCircles[phoneId]) {
+                            map.removeLayer(speedCircles[phoneId]);
+                            delete speedCircles[phoneId]
+
+
+                        }
+                        if (polylines[phoneId]) {
+                            map.removeLayer(polylines[phoneId]);
+                            delete polylines[phoneId];
+                        }
+                    }
+                }
+            }
+//////////////////////////////////////////////////////////////
+            // Loop through all existing cards and hide inactive phones
+
+            for (let card of cards) {
+                let phoneId = card.id.replace('card_', '');
+                if (!activePhones.has(phoneId)) {
+                    card.style.display = 'none';
+
+                    // If the phone was being tracked and then disconnected, save the track
+                    if (isTracking[phoneId] && trackStartTime[phoneId]) {
+                        isTracking[phoneId] = false;
+
+                        const startTime = trackStartTime[phoneId];
+                        const endTime = new Date().toISOString();
+
+                        delete trackStartTime[phoneId];
+                        delete paths[phoneId];
+                        // Remove the polyline for the phone
+
+                        if (polylines[phoneId]) {
+                            map.removeLayer(polylines[phoneId]);
+                            delete polylines[phoneId];
+                        }
+                        // Save the track data
+
+                        fetch('/api/save_track_shapefile/', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                phone_id: phoneId,
+                                start_time: startTime,
+                                end_time: endTime
+                            })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status === 'success') {
+                                    alert(`📦 مسیر ضبط‌شده دستگاه ${phoneId} (در زمان قطع شدن) با موفقیت ذخیره شد.`);
+                                    for (let ext of ['shp', 'shx', 'dbf', 'prj']) {
+                                        const url = `/download/${data.files[ext].split('/').pop()}`;
+                                        const link = document.createElement('a');
+                                        link.href = url;
+                                        link.download = '';
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                    }
+                                    loadPersistentTracks(phoneId);
+                                } else {
+                                    alert(`❌ خطا در ذخیره مسیر ${phoneId}: ${data.message}`);
+                                }
+                            })
+                            .catch(error => {
+                                console.error(`❌ خطا در ذخیره مسیر ${phoneId}:`, error);
+                            });
+
+                    } else if (isTracking[phoneId]) {
+                        // If tracking was stopped manually, save the track
+                        isTracking[phoneId] = false;
+                        if (polylines[phoneId]) {
+                            map.removeLayer(polylines[phoneId]);
+                            delete polylines[phoneId];
+                        }
+                        delete paths[phoneId];
+                        const sessionId = currentSessionId[phoneId];
+                        if (sessionId) {
+                            fetch('/api/save_track_shapefile/', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({phone_id: phoneId, session_id: sessionId})
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.status === 'success') {
+                                        alert(`📦 مسیر ${phoneId} ذخیره شد.`);
+                                        for (let ext of ['shp', 'shx', 'dbf', 'prj']) {
+                                            const url = `/download/${data.files[ext].split('/').pop()}`;
+                                            const link = document.createElement('a');
+                                            link.href = url;
+                                            link.download = '';
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                        }
+                                        loadPersistentTracks(phoneId);
+                                    }
+                                });
+                        }
+                        delete currentSessionId[phoneId];
+                    }
+
+                    loadPersistentTracks(phoneId);
+                }
+            }
+
+////////////////////////////////////////////////////////////////////////////////
+            // If no phones are available, clear the phone cards
+
+            if (!data.phones || data.phones.length === 0) {
+                phoneCards.innerHTML = '';
+            }
+        }
+
+        // Zoom the map to a specific phone's location, adjusting zoom level based on speed
+        function zoomTo(phoneId) {
+            // Set this phone as the currently focused device
+            focusedPhoneId = phoneId;
+
+            // Proceed only if a marker exists for the phone
+            if (markers[phoneId]) {
+                // Fetch the latest speed data for this phone from the API
+                fetch(`/api/phones/${phoneId}/latest/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        let speed = parseFloat(data.speed) || 0; // Default to 0 if speed is invalid
+
+                        let zoomLevel = 17; // Start with high zoom level
+
+                        // Dynamically reduce zoom level based on speed (the faster, the wider the view)
+                        if (speed > 20) zoomLevel--;
+                        if (speed > 40) zoomLevel--;
+                        if (speed > 60) zoomLevel--;
+                        zoomLevel -= Math.floor((speed - 20) / 20); // Further adjustments for very high speed
+                        zoomLevel = Math.max(zoomLevel, 10); // Ensure zoom is not too low
+
+                        // Set the map view to the phone's location with calculated zoom level
+                        map.setView(markers[phoneId].getLatLng(), zoomLevel);
+                    });
+            }
+        }
+
+
+        // Add click event listener to the "zoom-all" button
+        document.getElementById('zoom-all').addEventListener('click', () => {
+            // Clear any phone that was previously focused
+            focusedPhoneId = null;
+
+            // Fit the map view to show all markers
+            fitAllMarkers();
+        });
+
+
+        // Adjust the map view to fit all currently visible markers
+        function fitAllMarkers() {
+            // Check if there are any markers on the map
+            if (Object.keys(markers).length > 0) {
+                // Create a feature group from all marker objects
+                let group = new L.featureGroup(Object.values(markers));
+
+                // Zoom the map to fit the bounds of all markers with padding
+                map.fitBounds(group.getBounds(), {
+                    padding: [50, 50],  // Padding in pixels around the bounds
+                    maxZoom: 12         // Limit zoom level to avoid excessive zoom-in
+                });
+            } else {
+                // If no markers exist, reset the view to a default center and zoom
+                map.setView([35.6895, 51.3890], 10); // Default to Tehran
+            }
+        }
+
+        // Create a Leaflet Draw control instance
+        var drawControl = new L.Control.Draw({
+            draw: {
+                polygon: true,    // Enable drawing of polygons
+                polyline: false,  // Disable drawing of polylines
+                circle: false,    // Disable drawing of circles
+                marker: false,    // Disable placing markers
+                rectangle: false  // Disable drawing rectangles
+            },
+            edit: {
+                // Provide an empty feature group as a placeholder for editable shapes
+                featureGroup: new L.FeatureGroup()
+            }
+        });
+
+
+        // Enable polygon drawing on the map using Leaflet Draw
+        function enableDraw() {
+            // Add the drawing control to the map (if not already added)
+            map.addControl(drawControl);
+
+            // Listen for the "created" event (when the user finishes drawing a shape)
+            map.on(L.Draw.Event.CREATED, function (e) {
+                // Remove the previous polygon if it exists
+                if (currentPolygon) map.removeLayer(currentPolygon);
+
+                // Save and display the new polygon
+                currentPolygon = e.layer;
+                currentPolygon.addTo(map);
+            });
+        }
+
+
+        // Remove the drawn polygon (allowed area) from the map and reset related visuals
+        function removePolygon() {
+            if (currentPolygon) {
+                // Remove the polygon shape from the map
+                map.removeLayer(currentPolygon);
+                currentPolygon = null;
+
+                // Remove all violation circles related to phones
+                for (let phoneId in circles) {
+                    if (circles[phoneId]) map.removeLayer(circles[phoneId]);
+                    delete circles[phoneId];
+                }
+
+                // Reset marker styles and alarm boxes for phones with no active alarms
+                Object.keys(markers).forEach(phoneId => {
+                    const alarmBox = document.getElementById('alarm_' + phoneId);
+                    if (alarmBox && alarmBox.textContent === "") {
+                        alarmBox.textContent = "";
+                        markers[phoneId].setStyle({color: 'blue'}); // Reset to default color
+                    }
+                });
+            }
+        }
+
+
+        // define global variables
+        const trackStartTime = {};
+
+        // Function to toggle the tracking state for a specific phone
+        async function toggleTracking(phoneId) {
+            const switchInput = document.getElementById('switch_' + phoneId);// Get the input switch element
+            const isActive = switchInput.value === "1"; // Check if the switch is set to "1" (active)
+
+            if (isActive) {
+                // Start recording the tracking path for the phone
+                isTracking[phoneId] = true;
+                trackStartTime[phoneId] = new Date().toISOString(); // Record the start time
+                // If the phone has a marker, get its current position and start the path
+                if (markers[phoneId]) {
+                    const latlng = markers[phoneId].getLatLng();// Get the current latitude and longitude
+                    paths[phoneId] = [[latlng.lat, latlng.lng]];// Initialize the path with the current location
+                } else {
+                    paths[phoneId] = [];// If no marker exists, start with an empty path
+                }
+                // Remove any existing polyline and create a new one for the tracking path
+                if (polylines[phoneId]) map.removeLayer(polylines[phoneId]);
+                polylines[phoneId] = L.polyline(paths[phoneId], {color: getRandomColor()}).addTo(map);
+
+            } else {
+                // Stop recording the tracking path for the phone
+                isTracking[phoneId] = false;
+                const startTime = trackStartTime[phoneId];// Get the start time of the tracking session
+                const endTime = new Date().toISOString();// Get the current time as the end time
+
+                // If the start time is not available, show an alert and stop
+                if (!startTime) {
+                    alert(`⚠️ شروع ضبط مشخص نیست برای ${phoneId}`);
+                    return;
+                }
+                // Delete the tracking path data for this phone
+
+                delete paths[phoneId];
+
+                try {
+                    // Send a request to the server to save the track as a shapefile
+                    const resp = await fetch('/api/save_track_shapefile/', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            phone_id: phoneId,
+                            start_time: startTime,
+                            end_time: endTime
+                        })
+                    });
+
+                    const data = await resp.json();// Parse the response from the server
+                    // If the request was successful, show an alert and download the shapefile
+                    if (data.status === 'success') {
+                        alert(`📦 مسیر ${phoneId} ذخیره شد ✅`);
+                        for (let ext of ['shp', 'shx', 'dbf', 'prj']) {
+                            const url = `/download/${data.files[ext].split('/').pop()}`;// Get the URL for the shapefile
+                            const link = document.createElement('a');// Create a download link
+                            link.href = url;
+                            link.download = '';// Set the download attribute (file will be downloaded without a name)
+                            document.body.appendChild(link);
+                            link.click(); // Programmatically click the link to trigger the download
+                            document.body.removeChild(link);// Remove the link after the download
+                        }
+                    } else {
+                        alert(`⚠️ خطا در ذخیره shapefile: ${data.message}`);// Show an error if the server response indicates failure
+                    }
+                } catch (e) {
+                    alert(`❌ خطا در اتصال با سرور`);// Show an error if the request fails
+                    console.error(e);// Log the error to the console
+                } finally {
+                    delete trackStartTime[phoneId]; // Clean up by deleting the start time
+                }
+            }
+        }
+
+
+        // Calculate the distance between two geographic coordinates using the Haversine formula
+        // Returns distance in kilometers
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            var R = 6371; // Earth's radius in kilometers
+
+            // Convert degree differences to radians
+            var dLat = deg2rad(lat2 - lat1);
+            var dLon = deg2rad(lon2 - lon1);
+
+            // Haversine formula
+            var a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c; // Distance in kilometers
+        }
+
+
+        // Convert degrees to radians (used in distance or geospatial calculations)
+        function deg2rad(deg) {
+            return deg * (Math.PI / 180);
+        }
+
+
+        //////////////////////////////////////////////
+        // Function to update the markers on the map based on the latest phone data
+        async function updateMarkers(data) {
+            phones = data.phones;// Get the list of phones from the server response
+            // Loop through each phone to update its marker and associated information
+
+            for (let phone of phones) {
+                let phoneId = phone.phone_id;
+                let lat = parseFloat(phone.lat);
+                let lon = parseFloat(phone.lon);
+                // Validate if the coordinates are valid
+
+                if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                    console.warn(`Invalid coordinates for ${phoneId}: lat=${lat}, lon=${lon}`);
+                    continue;
+                }
+
+                let latlng = [lat, lon];// Create a latitude/longitude array for the marker
+                console.log(`Updating marker for ${phoneId} at lat: ${lat}, lon: ${lon}`);
+                // If the marker for this phone doesn't exist yet and the phone is active, create a new marker
+
+                if (!markers[phoneId] && phone.is_active) {
+                    markers[phoneId] = L.marker(latlng).addTo(map)
+                        .bindPopup(`<b>📱 ${phoneId}</b><br><strong>مدل:</strong> ${phone.model || 'N/A'}<br><strong>سرعت:</strong> 🚗 N/A km/h<br><strong>شارژ باتری:</strong> ⚡ ${phone.battery_level || 'N/A'}%`);
+                    previousPositions[phoneId] = {lat: lat, lon: lon, timestamp: Date.now()};
+                    loadPersistentTracks(phoneId);
+                } else if (markers[phoneId] && phone.is_active) {
+                    markers[phoneId].setLatLng(latlng);
+                    // Fetch the latest speed data for the phone and update the popup content
+
+                    fetch(`/api/phones/${phoneId}/latest/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            let speed = parseFloat(data.speed) || 0;
+                            markers[phoneId].setPopupContent(`<b>📱 ${phoneId}</b><br><strong>مدل:</strong> ${phone.model || 'N/A'}<br><strong>سرعت:</strong> 🚗 ${speed.toFixed(2)} km/h<br><strong>شارژ باتری:</strong> ⚡ ${phone.battery_level || 'N/A'}%`);
+                            // If this phone is the currently focused one, adjust the zoom level based on its speed
+
+                            if (focusedPhoneId === phoneId) {
+                                let zoomLevel = 17;
+                                if (speed > 20) zoomLevel--;
+                                if (speed > 40) zoomLevel--;
+                                if (speed > 60) zoomLevel--;
+                                zoomLevel -= Math.floor((speed - 20) / 20);
+                                zoomLevel = Math.max(zoomLevel, 10);
+                                map.setView(latlng, zoomLevel);
+                            }
+                            // Alarm box to display messages based on conditions
+
+                            const alarmBox = document.getElementById('alarm_' + phoneId);
+                            let outOfBounds = currentPolygon && !isPointInPolygon([lon, lat], currentPolygon);
+
+                            // Check if the phone is outside the defined allowed area (zone)
+                            if (outOfBounds) {
+                                if (zoneCones[phoneId]) map.removeLayer(zoneCones[phoneId]);
+                                zoneCones[phoneId] = L.polygon(generateCone(lat, lon, 20, 225), {
+                                    color: 'yellow',
+                                    fillOpacity: 0.4,
+                                    weight: 0
+
+                                }).addTo(map);
+                                alarmBox.textContent = "خارج از محدوده!";
+                            } else {
+                                if (zoneCones[phoneId]) {
+                                    map.removeLayer(zoneCones[phoneId]);
+                                    delete zoneCones[phoneId];
+                                }
+                                if (!speedCones[phoneId]) {
+                                    alarmBox.textContent = "";
+                                }
+                            }
+
+                            // Check for speed violations
+                            if (speedLimit && speed > speedLimit) {
+                                if (speedCones[phoneId]) map.removeLayer(speedCones[phoneId]);
+                                speedCones[phoneId] = L.polygon(generateCone(lat, lon, 20, 45), {
+                                    color: 'red',
+                                    fillOpacity: 0.5,
+                                    weight: 0
+                                }).addTo(map);
+                                alarmBox.textContent = "سرعت غیرمجاز!";
+                            } else {
+                                if (speedCones[phoneId]) {
+                                    map.removeLayer(speedCones[phoneId]);
+                                    delete speedCones[phoneId];
+                                }
+                                if (!zoneCones[phoneId]) {
+                                    alarmBox.textContent = "";
+                                }
+                            }
+
+                            // Update the marker color based on whether there is a speed violation or out-of-bounds situation
+                            if (speedCones[phoneId]) {
+                                markers[phoneId].setStyle({color: 'red'});
+                            } else if (zoneCones[phoneId]) {
+                                markers[phoneId].setStyle({color: 'orange'});
+                            } else {
+                                markers[phoneId].setStyle({color: 'blue'});
+                            }
+                        });
+
+                    // Check if the phone is being tracked and update its path
+                    if (isTracking[phoneId]) {
+                        // If the phone has a recorded path
+                        if (paths[phoneId]) {
+                            // Validate the new latitude and longitude values
+                            if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                                // Add the new location to the tracking path
+                                paths[phoneId].push(latlng);
+                                // Update the polyline with the new path
+                                polylines[phoneId].setLatLngs(paths[phoneId]);
+                            }
+                        }
+                    }
+
+                }
+            }
+
+            updatePhoneList(data);
+//////This code checks which phones are currently active and removes markers, zone cones, speed cones, and polylines for phones that are no longer active.
+            // Create a Set of active phone IDs from the fetched data
+            const activePhoneIds = new Set(data.phones.map(p => p.phone_id));
+            // Loop through all markers to check for inactive phones
+            for (let phoneId in markers) {
+                // If the phone is not in the active phone list
+                if (!activePhoneIds.has(phoneId)) {
+                    // Remove the marker for this phone from the map and delete its reference
+                    map.removeLayer(markers[phoneId]);
+                    delete markers[phoneId];
+                    delete previousPositions[phoneId];
+                    // Remove any zone cones (representing geofencing) for this phone
+                    if (zoneCones[phoneId]) {
+                        map.removeLayer(zoneCones[phoneId]);
+                        delete zoneCones[phoneId];
+                    }
+                    // Remove any speed cones (representing speed violations) for this phone
+                    if (speedCones[phoneId]) {
+                        map.removeLayer(speedCones[phoneId]);
+                        delete speedCones[phoneId];
+                    }
+                    // Remove any recorded path (polyline) for this phone from the map
+                    if (polylines[phoneId]) {
+                        map.removeLayer(polylines[phoneId]);
+                        delete polylines[phoneId];
+                    }
+                }
+            }
+        }
+
+
+        ///////////////////////////////////////////////////////////////
+        // Set an interval to repeatedly fetch the latest phone data every 2 seconds
+
+        setInterval(() => {
+            // Fetch the latest phone data from the API
+
+            fetch('/api/phones/latest/')
+                .then(response => response.json())
+                .then(data => updateMarkers(data));
+        }, 2000);// 2000 milliseconds = 2 seconds
+
+        // Toggle the visibility of persistent (saved) tracks on the map
+        function togglePersistentTracks() {
+            const show = document.getElementById("toggleTracks").checked;
+            for (let phoneId in persistentPolylines) {
+                for (let sessionId in persistentPolylines[phoneId]) {
+                    if (persistentPolylines[phoneId][sessionId]) {
+                        if (show) {
+                            persistentPolylines[phoneId][sessionId].addTo(map);
+                        } else {
+                            map.removeLayer(persistentPolylines[phoneId][sessionId]);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Function to determine if a given point (longitude, latitude) is inside a polygon
+        function isPointInPolygon(point, polygon) {
+            const x = point[1], y = point[0]; // point is [lon, lat]; x = lat, y = lon (Leaflet uses lat/lng order)
+
+            // Get the vertices of the polygon (assuming it's a simple polygon without holes)
+            const vertices = polygon.getLatLngs()[0];
+
+            let inside = false;
+
+            // Use ray-casting algorithm to determine if point is inside
+            for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+                const xi = vertices[i].lat, yi = vertices[i].lng;
+                const xj = vertices[j].lat, yj = vertices[j].lng;
+
+                const intersect =
+                    ((yi > y) !== (yj > y)) &&
+                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+
+                if (intersect) inside = !inside;
+            }
+
+            return inside;
+        }
+
+        // Function to generate a cone-shaped area around a specific point (lat, lon) with a given radius, bearing, and color
+        function generateCone(lat, lon, radiusKm, bearingDeg, color) {
+            const R = 6371;  // Earth radius in km
+            const steps = 10; // Number of steps to calculate points along the cone's edge
+            const angleDeg = 45;// Angle of the cone's sector (default 45 degrees)
+            const coords = [[lat, lon]]; // Starting point at the center of the cone
+            const toRad = (deg) => deg * Math.PI / 180;
+            const toDeg = (rad) => rad * 180 / Math.PI;
+
+            const bearingRad = toRad(bearingDeg);
+            const angleRad = toRad(angleDeg);
+            // Loop to generate the points along the cone's edge
+
+            for (let i = 0; i <= steps; i++) {
+                const theta = bearingRad - angleRad / 2 + (angleRad * i / steps);
+                const lat1 = toRad(lat), lon1 = toRad(lon);
+
+                const lat2 = Math.asin(Math.sin(lat1) * Math.cos(radiusKm / R) +
+                    Math.cos(lat1) * Math.sin(radiusKm / R) * Math.cos(theta));
+                const lon2 = lon1 + Math.atan2(Math.sin(theta) * Math.sin(radiusKm / R) * Math.cos(lat1),
+                    Math.cos(radiusKm / R) - Math.sin(lat1) * Math.sin(lat2));
+
+                coords.push([toDeg(lat2), toDeg(lon2)]);
+            }
+
+            coords.push([lat, lon]);  // Close the cone shape
+            return coords;
+        }
+
+        // Select all radio buttons for the basemap options
+        document.querySelectorAll('input[name="basemap"]').forEach(input => {
+            // Add an event listener for the 'change' event on each radio button
+            input.addEventListener('change', function () {
+                // Remove the current base layer from the map
+                for (let layer in baseLayers) {
+                    map.removeLayer(baseLayers[layer]);
+                }
+                // Add the selected base layer to the map
+                baseLayers[this.value].addTo(map);
+            });
+        });
+
+    </script>
+{% endblock %}

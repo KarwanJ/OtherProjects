@@ -1,0 +1,7 @@
+2025-05-19 15:11:19,049 - INFO - Rendering map view
+2025-05-19 15:11:21,152 - INFO - Received get_latest_phones request
+2025-05-19 15:11:21,153 - INFO - Returning 0 active phones
+2025-05-19 15:11:21,638 - INFO - Rendering map view
+2025-05-19 15:11:23,731 - WARNING - Not Found: /favicon.ico
+2025-05-19 15:11:24,312 - INFO - Received get_latest_phones request
+2025-05-19 15:11:24,314 - INFO - Returning 0 active phones

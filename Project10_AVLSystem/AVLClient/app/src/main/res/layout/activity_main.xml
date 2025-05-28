@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8F9FA">
+
+    <!-- Map container for displaying the map view using OpenStreetMap (OSMDroid library) -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@+id/status_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Container for loading indicator and status text displayed while fetching location -->
+    <LinearLayout
+        android:id="@+id/loading_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:background="@drawable/rounded_bg_translucent"
+        android:backgroundTint="#FFFFFF"
+        android:clipToOutline="true"
+        android:elevation="8dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- This ProgressBar shows a loading spinner indicating that the app is waiting for the user's location to be determined. -->
+        <ProgressBar
+            android:id="@+id/location_loader"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:indeterminate="true"
+            android:indeterminateTint="#009688" />
+
+        <!-- This TextView displays a message indicating that the app is currently retrieving the user's location. -->
+        <TextView
+            android:id="@+id/location_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="📍 Getting location..."
+            android:textColor="#009688"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- TextView for displaying status messages, positioned between the map and info card -->
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="6dp"
+        android:text=""
+        android:textAlignment="center"
+        android:textColor="#4CAF50"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toTopOf="@id/info_card"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/mapview" />
+
+    <!-- CardView containing location-related information, styled with elevation and rounded corners -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/info_card"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:layout_constraintBottom_toTopOf="@id/button_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/status_text">
+
+        <!-- TextView inside the CardView for displaying location status or statistics -->
+        <TextView
+            android:id="@+id/location_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="Status 📊📱"
+            android:textAlignment="center"
+            android:textColor="#333333"
+            android:textSize="16sp" />
+    </androidx.cardview.widget.CardView>
+
+    <!-- Container for Start and Stop buttons, horizontally aligned at the bottom of the info card -->
+    <LinearLayout
+        android:id="@+id/button_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        app:layout_constraintBottom_toTopOf="@id/id_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/info_card">
+
+        <!-- Button to start an action, likely related to location tracking or monitoring -->
+        <Button
+            android:id="@+id/startButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:backgroundTint="#009688"
+            android:text="Start"
+            android:textColor="#FFFFFF" />
+
+        <!-- Button to stop an action, likely related to location tracking or monitoring -->
+        <Button
+            android:id="@+id/stopButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#009688"
+            android:text="Stop"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- Container for displaying the phone's unique ID at the bottom of the screen -->
+    <LinearLayout
+        android:id="@+id/id_container"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- TextView for showing the phone's ID, styled with an editable text background -->
+        <TextView
+            android:id="@+id/phone_id_display"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="#FFFFFF"
+            android:elevation="4dp"
+            android:padding="12dp"
+            android:text="Phone ID: Loading..."
+            android:textColor="#333333"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

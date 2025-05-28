@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گروه اول - پروژه اول دکتر عابدینی</title>
+    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/ol@v10.2.1/dist/ol.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.2.1/ol.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+    <div id="map" class="map"></div>
+    <div class="map-container">
+        <div id="map_show" class="map_show"></div>
+        <div id="mouse-position" class="custom-mouse-position"></div>
+        <!-- //////Layer list for layer switcher///////////////////////////////////////////////////////////////////// -->
+        <div class="layer-switcher">
+
+            <h3 dir="rtl">لایه ها:</h3>
+            <div class="responsive-switches">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="drawing" checked
+                        onchange="toggleLayer(this, 'drawing')">
+                    <label class="form-check-label" for="drawing">لایه ترسیمات</label>
+                </div>
+
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer_osm" checked
+                        onchange="toggleLayer(this, 'layer_osm')">
+                    <label class="form-check-label" for="layer_osm">osm لایه</label>
+                </div>
+
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer1" checked
+                        onchange="toggleLayer(this, 'layer1')">
+                    <label class="form-check-label" for="layer1" dir="rtl">1- شیپ فایل اصفهان</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer2" checked
+                        onchange="toggleLayer(this, 'layer2')">
+                    <label class="form-check-label" for="layer2" dir="rtl">2-buildings_a</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer3" checked
+                        onchange="toggleLayer(this, 'layer3')">
+                    <label class="form-check-label" for="layer3" dir="rtl">3-landuse_a</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer4" checked
+                        onchange="toggleLayer(this, 'layer4')">
+                    <label class="form-check-label" for="layer4" dir="rtl">4-natural_a</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer5" checked
+                        onchange="toggleLayer(this, 'layer5')">
+                    <label class="form-check-label" for="layer5" dir="rtl">5-places_a</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer6" checked
+                        onchange="toggleLayer(this, 'layer6')">
+                    <label class="form-check-label" for="layer6" dir="rtl">6-pois_a</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer7" checked
+                        onchange="toggleLayer(this, 'layer7')">
+                    <label class="form-check-label" for="layer7" dir="rtl">7-pofw_a</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer8" checked
+                        onchange="toggleLayer(this, 'layer8')">
+                    <label class="form-check-label" for="layer8" dir="rtl">8-traffic_a</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer9" checked
+                        onchange="toggleLayer(this, 'layer9')">
+                    <label class="form-check-label" for="layer9" dir="rtl">9-transport_a</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer10" checked
+                        onchange="toggleLayer(this, 'layer10')">
+                    <label class="form-check-label" for="layer10" dir="rtl">10-water_a</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer11" checked
+                        onchange="toggleLayer(this, 'layer11')">
+                    <label class="form-check-label" for="layer11" dir="rtl">11-natural</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer12" checked
+                        onchange="toggleLayer(this, 'layer12')">
+                    <label class="form-check-label" for="layer12" dir="rtl">12-traffic</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer13" checked
+                        onchange="toggleLayer(this, 'layer13')">
+                    <label class="form-check-label" for="layer13" dir="rtl">13-transport</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer14" checked
+                        onchange="toggleLayer(this, 'layer14')">
+                    <label class="form-check-label" for="layer14" dir="rtl">14-places</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer15" checked
+                        onchange="toggleLayer(this, 'layer15')">
+                    <label class="form-check-label" for="layer15" dir="rtl">15-pofw</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer16" checked
+                        onchange="toggleLayer(this, 'layer16')">
+                    <label class="form-check-label" for="layer16" dir="rtl">16-pois</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer17" checked
+                        onchange="toggleLayer(this, 'layer17')">
+                    <label class="form-check-label" for="layer17" dir="rtl">17-waterways</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer18" checked
+                        onchange="toggleLayer(this, 'layer18')">
+                    <label class="form-check-label" for="layer18" dir="rtl">18-roads</label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="layer19" checked
+                        onchange="toggleLayer(this, 'layer19')">
+                    <label class="form-check-label" for="layer19" dir="rtl">19-railways</label>
+                </div>
+
+
+
+            </div>
+            <hr class="white-line1">
+            <div class="title" dir="auto">استاد: دکتر عابدینی</div>
+            <div class="subtitle" dir="rtl">گروه اول:</div>
+            <div class="names">
+                کاروان جلالی
+                <br>
+                فرشاد شمسی خانی
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="tools">
+        <div class="button-container">
+            <form class="d-flex align-items-center"></form>
+            <div class="btn-group btn-group-rtl d-flex" role="group" aria-label="Basic example"
+                style="direction: rtl; gap: 10px;">
+
+                <form class="d-flex align-items-center">
+                    <label for="type" class="me-1"
+                        style="padding-left: 5px; white-space: nowrap; position: relative; top: -4px;">ابزار اندازه گیری
+                        :</label>
+                    <!-- //////////////Measurement form //////////////////////////////////////////////////////////// -->
+                    <select id="type" class="form-select w-50 text-white">
+                        <option value="inactive" selected>غیرفعال</option>
+                        <option value="length">طول</option>
+                        <option value="area">مساحت</option>
+                    </select>
+
+                </form>
+<!-- ///////////////////////Drawing form/////////////////////////////////////////////////////////// -->
+                <div class="forms">
+                    <div class="row">
+                        <div class="col-auto">
+                            <div class="input-group">
+                                <label class="me-1"
+
+                                    style="padding-left: 5px ; position: relative; top: 5px;">ترسیم:</label>
+                                <select id="type2" class="form-select w-50 text-white" custom-font">
+                                    <option value="None" selected>غیرفعال</option>
+                                    <option value="Point">نقطه</option>
+                                    <option value="LineString">خط</option>
+                                    <option value="Polygon">پلیگون</option>
+                                    <option value="Circle">دایره</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vertical-line"></div>
+<!-- ////////////////////identify and other buttons//////////////////////////////////////////////////// -->
+                <div class="btn-group btn-group-rtl d-flex" role="group" aria-label="Basic example" style="gap: 5px;">
+                    <button id="identify-btn" class="btn btn-secondary rounded flex-fill btn-custom"
+                        style="background-color: #03719c; border-color: #ffffff;">Identify</button>
+                    <button onclick="clearDrawings()" class="btn btn-secondary rounded flex-fill btn-custom"
+                        style="background-color: #03719c; border-color: #ffffff;">حذف ترسیمات</button>
+                    <button id="refreshButton" class="btn btn-secondary rounded flex-fill btn-custom"
+                        style="background-color: #03719c; border-color: #ffffff;">Refresh</button>
+                    <input class="btn btn-secondary rounded flex-fill btn-custom" type="button" value="Undo" id="undo"
+                        style="background-color: #03719c; border-color: #ffffff;">
+                </div>
+
+            </div>
+        </div>
+
+
+
+
+
+        <script>
+            ////layers/////////////////////////////////////////
+            const vectorSource = new ol.source.Vector();
+            const vectorLayer = new ol.layer.Vector({
+                source: vectorSource,
+                id: 'drawing'
+            });
+
+            const map = new ol.Map({
+                target: 'map_show',
+                layers: [
+                    new ol.layer.Tile({
+                        id: 'layer_osm',
+                        source: new ol.source.OSM({ crossOrigin: null })
+                    }),
+
+                    new ol.layer.Tile({
+                        title: 'Isfahan_Shape',
+                        id: 'layer1',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': '	FirstProject:Pisfahan', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_buildings_a_free_1_Clip',
+                        id: 'layer2',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_buildings_a_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_landuse_a_free_1_Clip',
+                        id: 'layer3',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_landuse_a_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_natural_a_free_1_Clip',
+                        id: 'layer4',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_natural_a_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_places_a_free_1_Clip',
+                        id: 'layer5',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_places_a_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_pois_a_free_1_Clip',
+                        id: 'layer6',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_pois_a_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_pofw_a_free_1_Clip',
+                        id: 'layer7',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_pofw_a_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_traffic_a_free_1_Clip',
+                        id: 'layer8',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_traffic_a_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_transport_a_free_1_Clip',
+                        id: 'layer9',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_transport_a_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_water_a_free_1_Clip',
+                        id: 'layer10',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_water_a_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_natural_free_1_Clipped',
+                        id: 'layer11',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_natural_free_1_Clipped', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_traffic_free_1_clipped',
+                        id: 'layer12',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_traffic_free_1_clipped', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_transport_free_1_clipped',
+                        id: 'layer13',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_transport_free_1_clipped', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_places_free_1_Clip',
+                        id: 'layer14',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_places_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_pofw_free_1_Clip',
+                        id: 'layer15',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_pofw_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_pois_free_1_Clip',
+                        id: 'layer16',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_pois_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_waterways_free_1_Clip',
+                        id: 'layer17',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_waterways_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: '	FirstProject:gis_osm_roads_free_1_Clip',
+                        id: 'layer18',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_roads_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    new ol.layer.Tile({
+                        title: 'FirstProject:gis_osm_railways_free_1_Clip',
+                        id: 'layer19',
+                        source: new ol.source.TileWMS({
+                            url: 'http://localhost:8080/geoserver/FirstProject/wms?service=WMS',
+                            params: { 'LAYERS': 'FirstProject:gis_osm_railways_free_1_Clip', 'TILED': true }
+                        })
+                    }),
+                    vectorLayer
+                ],
+                view: new ol.View({
+                    projection: 'EPSG:4326',
+                    center: [51.665339, 32.653270],
+                    zoom: 7
+                })
+            });
+            //////////////Layer switcher//////////////////////////////////////////
+            function toggleLayer(checkbox, layerId) {
+                const layer = map.getLayers().getArray().find(l => l.get('id') === layerId);
+                layer.setVisible(checkbox.checked);
+
+            }
+
+            //////////////REFRESH BUTTON///////////////////////////////////////////
+            document.getElementById('refreshButton').addEventListener('click', function () {
+                location.reload(); // ریفرش صفحه
+            });
+
+
+
+            /////////////AREA & LENGTH CALCULATION////////////////////////////////
+
+
+            let sketch;
+            let helpTooltipElement;
+            let helpTooltip;
+            let measureTooltipElement;
+            let measureTooltip;
+
+            const continuePolygonMsg = 'برای ادامه ترسیم پلیگون کلیک کنید';
+            const continueLineMsg = 'برای ادامه ترسیم خط کلیک کنید';
+
+            const pointerMoveHandler = function (evt) {
+                if (evt.dragging) {
+                    return;
+                }
+                let helpMsg = 'برای ترسیم کلیک کنید';
+
+                if (sketch) {
+                    const geom = sketch.getGeometry();
+                    if (geom instanceof ol.geom.Polygon) {
+                        helpMsg = continuePolygonMsg;
+                    } else if (geom instanceof ol.geom.LineString) {
+                        helpMsg = continueLineMsg;
+                    }
+                }
+
+                helpTooltipElement.innerHTML = helpMsg;
+                helpTooltip.setPosition(evt.coordinate);
+                helpTooltipElement.classList.remove('hidden');
+            };
+
+            // حذف listener به طور پیش‌فرض
+            map.getViewport().addEventListener('mouseout', function () {
+                helpTooltipElement.classList.add('hidden');
+            });
+
+            const typeSelect = document.getElementById('type');
+            let draw;
+
+            // فرمت طول (متر یا کیلومتر)
+            const formatLength = function (line) {
+                const length = ol.sphere.getLength(line, { projection: 'EPSG:4326' });
+                let output;
+                if (length > 1000) {
+                    output = (Math.round((length / 1000) * 100) / 100) + ' km';
+                } else {
+                    output = Math.round(length * 100) / 100 + ' m';
+                }
+                return output;
+            };
+
+            // فرمت مساحت (متر مربع یا کیلومتر مربع)
+            const formatArea = function (polygon) {
+                const area = ol.sphere.getArea(polygon, { projection: 'EPSG:4326' });
+                let output;
+                if (area > 1000000) {
+                    output = (Math.round((area / 1000000) * 100) / 100) + ' km<sup>2</sup>';
+                } else {
+                    output = Math.round(area * 100) / 100 + ' m<sup>2</sup>';
+                }
+                return output;
+            };
+
+            function addInteraction() {
+                const type = typeSelect.value === 'area' ? 'Polygon' : 'LineString';
+                draw = new ol.interaction.Draw({
+                    source: vectorSource,
+                    type: type,
+                    style: new ol.style.Style({
+                        stroke: new ol.style.Stroke({
+                            color: '#01a8a0',
+                            width: 2,
+                            lineDash: [10, 10]
+
+                        }),
+                        fill: new ol.style.Fill({
+                            color: 'rgba(1, 168, 160, 0.3)'
+                        })
+                    })
+                });
+                map.addInteraction(draw);
+
+                createMeasureTooltip();
+                createHelpTooltip();
+
+                // فعال‌سازی mousemove فقط در صورت انتخاب حالت‌های area یا length
+                map.on('pointermove', (evt) => {
+                    if (typeSelect.value === 'area' || typeSelect.value === 'length') {
+                        pointerMoveHandler(evt);
+                    }
+                });
+
+                let listener;
+                draw.on('drawstart', function (evt) {
+                    sketch = evt.feature;
+                    let tooltipCoord = evt.coordinate;
+
+                    listener = sketch.getGeometry().on('change', function (evt) {
+                        const geom = evt.target;
+                        let output;
+                        if (geom instanceof ol.geom.Polygon) {
+                            output = formatArea(geom);
+                            tooltipCoord = geom.getInteriorPoint().getCoordinates();
+                        } else if (geom instanceof ol.geom.LineString) {
+                            output = formatLength(geom);
+                            tooltipCoord = geom.getLastCoordinate();
+                        }
+                        measureTooltipElement.innerHTML = output;
+                        measureTooltip.setPosition(tooltipCoord);
+                    });
+                });
+
+                draw.on('drawend', function (evt) {
+                    evt.feature.setStyle(new ol.style.Style({
+                        stroke: new ol.style.Stroke({
+                            color: '#01a8a0',
+                            width: 2,
+                            lineDash: [10, 10]
+                        }),
+                        fill: new ol.style.Fill({
+                            color: 'rgba(1, 168, 160, 0.3)'
+                        })
+                    }));
+                    measureTooltipElement.className = 'ol-tooltip ol-tooltip-static';
+                    measureTooltip.setOffset([0, -7]);
+                    sketch = null;
+                    measureTooltipElement = null;
+                    createMeasureTooltip();
+                    ol.Observable.unByKey(listener);
+                });
+            }
+
+            function createHelpTooltip() {
+                if (helpTooltipElement) {
+                    helpTooltipElement.remove();
+                }
+                helpTooltipElement = document.createElement('div');
+                helpTooltipElement.className = 'ol-tooltip hidden';
+                helpTooltip = new ol.Overlay({
+                    element: helpTooltipElement,
+                    offset: [15, 0],
+                    positioning: 'center-left',
+                    lineDash: [10, 10]
+                });
+                map.addOverlay(helpTooltip);
+            }
+
+            function createMeasureTooltip() {
+                if (measureTooltipElement) {
+                    measureTooltipElement.remove();
+                }
+                measureTooltipElement = document.createElement('div');
+                measureTooltipElement.className = 'ol-tooltip ol-tooltip-measure';
+                measureTooltip = new ol.Overlay({
+                    element: measureTooltipElement,
+                    offset: [0, -15],
+                    positioning: 'bottom-center',
+                    stopEvent: false,
+                    insertFirst: false,
+                });
+                map.addOverlay(measureTooltip);
+            }
+
+            typeSelect.onchange = function () {
+                map.removeInteraction(draw);
+
+                // اگر حالت غیرفعال انتخاب شود، کرسر به حالت اولیه برمی‌گردد
+                if (typeSelect.value === 'inactive') {
+                    map.un('pointermove', pointerMoveHandler);
+                    helpTooltipElement.classList.add('hidden'); // پنهان کردن tooltip کمک
+                    return; // خروج از تابع
+                }
+
+                addInteraction(); // اگر حالت فعال باشد، اضافه کردن تعامل
+            };
+
+
+            ///////////////////Draw and Add features////////////////////////////
+            let draw2
+            // draw function
+            const typeSelect2 = document.getElementById('type2');
+            function addInteraction2() {
+                const value = typeSelect2.value;
+                if (value !== 'None') {
+                    draw2 = new ol.interaction.Draw({
+                        source: vectorSource,
+                        type: value,
+                        style: new ol.style.Style({
+                            stroke: new ol.style.Stroke({
+                                color: '#01a8a0',
+                                width: 2
+                            }),
+                            fill: new ol.style.Fill({
+                                color: 'rgba(1, 168, 160, 0.3)'
+                            }),
+                            image: new ol.style.Circle({  // برای ابزار نقطه
+                                radius: 6,
+                                fill: new ol.style.Fill({
+                                    color: '#01a8a0'
+                                }),
+                                stroke: new ol.style.Stroke({
+                                    color: '#01a8a0',
+                                    width: 2
+                                })
+                            })
+                        })
+                    });
+                    map.addInteraction(draw2);
+
+                    draw2.on('drawend', function (evt) {
+                        evt.feature.setStyle(new ol.style.Style({
+                            stroke: new ol.style.Stroke({
+                                color: '#01a8a0',
+                                width: 2
+                            }),
+                            fill: new ol.style.Fill({
+                                color: 'rgba(1, 168, 160, 0.3)'
+                            }),
+                            image: new ol.style.Circle({
+                                radius: 6,
+                                fill: new ol.style.Fill({
+                                    color: '#01a8a0'
+                                }),
+                                stroke: new ol.style.Stroke({
+                                    color: '#01a8a0',
+                                    width: 2
+                                })
+                            })
+                        }));
+                    });
+                }
+            }
+
+
+
+            /**
+             * Handle change event.
+             */
+            typeSelect2.onchange = function () {
+                map.removeInteraction(draw2);
+                addInteraction2();
+            };
+
+            /////////////////////////////Undo button/////////////////////////////////////////
+
+            document.getElementById('undo').addEventListener('click', function () {
+                const features = vectorSource.getFeatures();
+                if (features.length > 0) {
+                    vectorSource.removeFeature(features[features.length - 1]); // حذف آخرین اشیاء
+                }
+            });
+
+
+            ////////////////////Clear all button///////////////////////////////////////
+            function clearDrawings() {
+                vectorSource.clear(); // حذف تمامی ویژگی‌های ترسیم شده از وکتور سورس
+
+            }
+
+
+            ////////////////////// Identify ///////////////////////////////////////////
+            document.getElementById('identify-btn').addEventListener('click', function () {
+                const layers = map.getLayers().getArray();
+                let layerOptions = '';
+
+                // ایجاد لیستی از لایه‌ها
+                layers.forEach((layer, index) => {
+                    const layerId = layer.get('id');
+                    if (layerId) {  // فقط لایه‌هایی که id دارند
+                        layerOptions += `<option value="${index}">${layerId}</option>`;
+                    }
+                });
+
+                // نمایش پنجره انتخاب لایه
+                const infoDiv = document.getElementById('info') || document.createElement('div');
+                infoDiv.id = 'info';
+                infoDiv.classList.add('draggable');
+                infoDiv.innerHTML = `
+        <div class="info-header">
+                        <h3>انتخاب لایه و نقطه</h3>
+            <button id="close-btn" class="btn btn-secondary close-btn" >×</button>
+
+        </div>
+    `;
+
+                const layerSelect = document.createElement('select');
+                layerSelect.classList.add('form-select', 'bg-secondary', 'text-white');
+                layerSelect.innerHTML = layerOptions;
+
+                const confirmButton = document.createElement('button');
+                confirmButton.textContent = 'انتخاب نقطه روی نقشه';
+                confirmButton.classList.add('btn', 'btn-secondary');
+                confirmButton.style.backgroundColor = '#03719c';
+                confirmButton.style.color = 'white';
+                confirmButton.style.border = '1px solid white';
+                confirmButton.style.marginTop = '10px';
+                confirmButton.style.display = 'block';
+                confirmButton.style.marginLeft = 'auto';
+                confirmButton.style.marginRight = 'auto';
+
+                infoDiv.appendChild(layerSelect);
+                infoDiv.appendChild(confirmButton);
+                document.body.appendChild(infoDiv);
+
+                // رویداد کلیک برای دکمه بستن
+                document.getElementById('close-btn').addEventListener('click', function () {
+                    infoDiv.remove();
+                });
+
+                // رویداد کلیک برای انتخاب نقطه و نمایش اطلاعات
+                confirmButton.addEventListener('click', function () {
+                    const selectedLayerIndex = layerSelect.value;
+                    const selectedLayer = layers[selectedLayerIndex];
+                    const layerId = selectedLayer.get('id');
+
+                    if (layerId) {
+                        const source = selectedLayer.getSource();  // دریافت منبع لایه انتخاب شده
+
+                        if (source instanceof ol.source.TileWMS) {
+                            // فعال کردن کلیک روی نقشه برای انتخاب نقطه
+                            let clickListener = map.on('click', function (evt) {
+                                const coordinate = evt.coordinate;
+                                const viewResolution = map.getView().getResolution();
+
+                                const url = source.getFeatureInfoUrl(
+                                    coordinate, // استفاده از مختصات کلیک‌شده توسط کاربر
+                                    viewResolution,
+                                    'EPSG:4326',
+                                    { 'INFO_FORMAT': 'text/html' }
+                                );
+
+                                if (url) {
+                                    fetch(url)
+                                        .then(response => response.text())
+                                        .then(html => {
+                                            const popupWindow = window.open('', '_blank', 'width=600,height=400');
+                                            popupWindow.document.write('<html><head><title>اطلاعات لایه</title></head><body>');
+                                            popupWindow.document.write(html);
+                                            popupWindow.document.write('</body></html>');
+                                            popupWindow.document.close();
+                                        })
+                                        .catch(err => {
+                                            alert('خطا در بارگذاری اطلاعات');
+                                        });
+                                } else {
+                                    alert('URL اطلاعات برای این لایه در دسترس نیست.');
+                                }
+
+                                // بعد از اولین کلیک، رویداد کلیک غیرفعال می‌شود
+                                ol.Observable.unByKey(clickListener);
+                            });
+
+                            alert('لطفا روی نقشه کلیک کنید تا نقطه‌ای انتخاب شود.');
+                        } else {
+                            alert('این لایه از نوع WMS نیست.');
+                        }
+                    } else {
+                        alert('لایه‌ای انتخاب نشده است.');
+                    }
+                });
+///////////displacement of identify window //////////////////////////////////////////////////////
+                // تابع برای جابه‌جایی پنجره
+                dragElement(infoDiv);
+
+                function dragElement(elm) {
+                    const header = elm.querySelector('.info-header');
+                    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+                    if (header) {
+                        header.onmousedown = dragMouseDown;
+                    }
+
+                    function dragMouseDown(e) {
+                        e.preventDefault();
+                        pos3 = e.clientX;
+                        pos4 = e.clientY;
+                        document.onmouseup = closeDragElement;
+                        document.onmousemove = elementDrag;
+                    }
+
+                    function elementDrag(e) {
+                        e.preventDefault();
+                        pos1 = pos3 - e.clientX;
+                        pos2 = pos4 - e.clientY;
+                        pos3 = e.clientX;
+                        pos4 = e.clientY;
+                        elm.style.top = (elm.offsetTop - pos2) + "px";
+                        elm.style.left = (elm.offsetLeft - pos1) + "px";
+                    }
+
+                    function closeDragElement() {
+                        document.onmouseup = null;
+                        document.onmousemove = null;
+                    }
+                }
+            });
+
+
+
+            ////////////////MOUSE WGS84 LATLONG COORDINATES//////////////////////////////
+            const mousePositionControl = new ol.control.MousePosition({
+                coordinateFormat: ol.coordinate.createStringXY(5),
+
+
+                projection: 'EPSG:4326',
+                className: 'custom-mouse-position',
+                target: document.getElementById('mouse-position'),
+            });
+
+            map.addControl(mousePositionControl);
+        </script>
+
+</body>
+
+</html>
